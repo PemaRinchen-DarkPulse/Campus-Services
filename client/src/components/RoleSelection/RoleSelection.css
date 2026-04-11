@@ -1,0 +1,503 @@
+/* ========================================
+   Role Selection — Split Panel Layout
+   Following GoCab Design System (design.md)
+   ======================================== */
+
+.role-selection-wrapper {
+  /* Design Tokens from design.md */
+  --primary: #2563EB;
+  --primary-light: #EFF6FF;
+  --accent-blue: #3B82F6;
+  --success: #16A34A;
+  --success-light: #DCFCE7;
+  --warning-bg: #FEF9C3;
+  --danger: #EF4444;
+  --surface: #FFFFFF;
+  --bg-base: #F3F4F6;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --border: #E5E7EB;
+
+  /* Spacing Tokens */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Radius Tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Shadow Tokens */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.12);
+  --shadow-button: 0 2px 8px rgba(37, 99, 235, 0.3);
+
+  /* Typography */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  padding: var(--space-lg);
+  box-sizing: border-box;
+}
+
+/* ── Main Split Container ── */
+.role-selection-container {
+  max-width: 960px;
+  width: 100%;
+  min-height: 560px;
+  display: flex;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.06);
+  animation: containerFadeIn 0.6s ease-out forwards;
+}
+
+/* ── Left Panel (Welcome / Image) ── */
+.role-panel-left {
+  flex: 0 0 50%;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+}
+
+/* Dark overlay so text is readable over the image */
+.role-panel-left::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Subtle floating circle decoration */
+.role-panel-left::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  top: -40px;
+  right: -60px;
+  animation: floatCircle 8s ease-in-out infinite;
+}
+
+.left-panel-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.left-panel-content h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.left-panel-content p {
+  font-size: 15px;
+  font-weight: 400;
+  margin: 0;
+  opacity: 0.85;
+  line-height: 1.6;
+  max-width: 260px;
+}
+
+/* ── Right Panel (Role Selection) ── */
+.role-panel-right {
+  flex: 1;
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.role-header {
+  margin-bottom: var(--space-lg);
+}
+
+.role-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 var(--space-xs) 0;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.role-header p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Role Cards Grid ── */
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.role-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  opacity: 0;
+  transform: translateY(12px);
+  animation: cardSlideUp 0.4s ease-out forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Staggered animation */
+.role-card:nth-child(1) { animation-delay: 0.15s; }
+.role-card:nth-child(2) { animation-delay: 0.25s; }
+.role-card:nth-child(3) { animation-delay: 0.35s; }
+.role-card:nth-child(4) { animation-delay: 0.45s; }
+
+.role-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.role-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.role-card h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.role-card p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Check indicator */
+.role-card .check-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  font-size: 11px;
+  color: transparent;
+  background: transparent;
+}
+
+/* ── Selected States ── */
+.role-card.selected {
+  transform: translateY(-2px);
+}
+
+.role-card.selected .check-indicator {
+  border-color: transparent;
+  color: #fff;
+}
+
+/* With Cards */
+.role-card[data-role="with-cards"] .role-card-icon {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.role-card.selected[data-role="with-cards"] {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.role-card.selected[data-role="with-cards"] .check-indicator {
+  background: var(--primary);
+}
+
+/* Without Cards */
+.role-card[data-role="without-cards"] .role-card-icon {
+  background: var(--success-light);
+  color: var(--success);
+}
+.role-card.selected[data-role="without-cards"] {
+  border-color: var(--success);
+  background: #f0fdf4;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+.role-card.selected[data-role="without-cards"] .check-indicator {
+  background: var(--success);
+}
+
+/* ── Continue Button ── */
+.btn-container {
+  opacity: 0;
+  animation: fadeIn 0.4s ease-out 0.6s forwards;
+}
+
+.btn-continue {
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: var(--shadow-button);
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.btn-continue:disabled {
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-continue:not(:disabled):hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-continue:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.btn-continue .btn-arrow {
+  font-size: 18px;
+  transition: transform 200ms ease;
+}
+
+.btn-continue:not(:disabled):hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+/* ── View Transition ── */
+.view-animate {
+  animation: viewFadeIn 0.35s ease-out forwards;
+}
+
+/* ── Back Button ── */
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: var(--space-lg);
+  font-family: inherit;
+  transition: color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.btn-back:hover {
+  color: var(--primary);
+}
+
+/* ── Sign In Form ── */
+.sign-in-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-group input {
+  padding: 12px var(--space-md);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-group input::placeholder {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.forgot-password {
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  align-self: flex-end;
+  transition: opacity 150ms ease;
+}
+
+.forgot-password:hover {
+  opacity: 0.8;
+}
+
+/* ── Animations ── */
+@keyframes containerFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes viewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes imageFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes floatCircle {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-10px, 10px) rotate(15deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .role-selection-wrapper {
+    padding: var(--space-md);
+    align-items: flex-start;
+  }
+
+  .role-selection-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .role-panel-left {
+    flex: none;
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .left-panel-image {
+    max-width: 160px;
+  }
+
+  .left-panel-content h2 {
+    font-size: 22px;
+  }
+
+  .left-panel-content p {
+    font-size: 13px;
+  }
+
+  .role-panel-right {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .role-selection-wrapper {
+    padding: 0;
+  }
+
+  .role-selection-container {
+    border-radius: 0;
+    min-height: 100vh;
+  }
+}
