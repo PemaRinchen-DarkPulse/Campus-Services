@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './RoleSelection.css';
 import bgImage from '../../assets/bg.webp';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 type RoleId = 'with-cards' | 'without-cards';
 type View = 'role-select' | 'sign-in';
 
@@ -9,6 +11,19 @@ interface Role {
   id: RoleId;
   title: string;
   description: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  specialization?: string;
+}
+
+interface RoleSelectionProps {
+  onLogin: (user: User, token: string) => void;
 }
 
 const roles: Role[] = [
@@ -24,17 +39,16 @@ const roles: Role[] = [
   }
 ];
 
-export const RoleSelection: React.FC = () => {
+export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
   const [selectedRole, setSelectedRole] = useState<RoleId | null>(null);
   const [currentView, setCurrentView] = useState<View>('role-select');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRoleClick = (roleId: RoleId) => {
     setSelectedRole(roleId);
-    if (roleId === 'without-cards') {
-      setCurrentView('sign-in');
-    }
   };
 
   const handleBack = () => {
@@ -42,20 +56,45 @@ export const RoleSelection: React.FC = () => {
     setSelectedRole(null);
     setEmail('');
     setPassword('');
+    setError('');
   };
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      console.log(`Signing in with: ${email}`);
-      alert(`Sign in successful!`);
+    if (!email || !password) return;
+
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.message || 'Invalid email or password');
+        setIsLoading(false);
+        return;
+      }
+
+      // Login successful — pass user & token to parent (App)
+      onLogin(data.user, data.token);
+    } catch (err) {
+      setError('Unable to connect to the server. Please try again.');
+      setIsLoading(false);
     }
   };
 
   const handleContinue = () => {
-    if (selectedRole) {
-      console.log(`Proceeding to dashboard for: ${selectedRole}`);
-      alert(`Success! You selected the With Cards option.`);
+    if (selectedRole === 'without-cards') {
+      setCurrentView('sign-in');
+    } else if (selectedRole === 'with-cards') {
+      // "With Cards" also goes to sign-in
+      setCurrentView('sign-in');
     }
   };
 
@@ -103,7 +142,7 @@ export const RoleSelection: React.FC = () => {
               <div className="btn-container">
                 <button
                   className="btn-continue"
-                  disabled={!selectedRole || selectedRole === 'without-cards'}
+                  disabled={!selectedRole}
                   onClick={handleContinue}
                 >
                   Continue
@@ -123,6 +162,12 @@ export const RoleSelection: React.FC = () => {
                 <p>Enter your credentials to continue.</p>
               </div>
 
+              {error && (
+                <div className="sign-in-error">
+                  {error}
+                </div>
+              )}
+
               <form className="sign-in-form" onSubmit={handleSignIn}>
                 <div className="form-group">
                   <label htmlFor="email">Email</label>
@@ -133,6 +178,7 @@ export const RoleSelection: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -145,14 +191,19 @@ export const RoleSelection: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
                 <a href="#" className="forgot-password">Forgot password?</a>
 
-                <button type="submit" className="btn-continue">
-                  Sign In
-                  <span className="btn-arrow">→</span>
+                <button
+                  type="submit"
+                  className="btn-continue"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Signing in…' : 'Sign In'}
+                  {!isLoading && <span className="btn-arrow">→</span>}
                 </button>
               </form>
             </div>

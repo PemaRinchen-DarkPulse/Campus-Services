@@ -369,10 +369,11 @@
 }
 
 .form-group input {
-  padding: 12px var(--space-md);
+  padding: 16px var(--space-md);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 15px;
+  min-height: 52px;
   font-family: inherit;
   color: var(--text-primary);
   background: var(--surface);
@@ -401,6 +402,19 @@
 
 .forgot-password:hover {
   opacity: 0.8;
+}
+
+/* ── Sign-In Error ── */
+.sign-in-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px var(--space-md);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+  animation: viewFadeIn 0.25s ease-out;
 }
 
 /* ── Animations ── */
