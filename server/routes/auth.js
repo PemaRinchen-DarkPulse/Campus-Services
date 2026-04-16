@@ -108,6 +108,62 @@ router.get('/me', protect, async (req, res) => {
   });
 });
 
+// Admin routes for User Management
+router.get('/users', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
+    }
+    const users = await User.find().select('-password');
+    res.status(200).json({ success: true, data: users });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Error fetching users' });
+  }
+});
+
+router.post('/users', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
+    }
+    const { name, email, password, role, status } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+    const user = await User.create({ name, email, password: password || 'password123', role, status });
+    res.status(201).json({ success: true, data: user });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+router.put('/users/:id', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    res.status(400).json({ success: false, message: 'Error updating user' });
+  }
+});
+
+router.delete('/users/:id', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
+    }
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.status(200).json({ success: true, data: {} });
+  } catch (err) {
+    res.status(400).json({ success: false, message: 'Error deleting user' });
+  }
+});
+
 // Bulk register users
 router.post('/bulk-register', protect, async (req, res) => {
   try {

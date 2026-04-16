@@ -5,7 +5,7 @@ import bgImage from '../../assets/bg.webp';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 type RoleId = 'with-cards' | 'without-cards';
-type View = 'role-select' | 'sign-in';
+type View = 'role-select' | 'sign-in' | 'service-select';
 
 interface Role {
   id: RoleId;
@@ -47,6 +47,8 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [pendingLoginData, setPendingLoginData] = useState<{ user: User; token: string } | null>(null);
+
   const handleRoleClick = (roleId: RoleId) => {
     setSelectedRole(roleId);
   };
@@ -81,9 +83,14 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
         return;
       }
 
-      // Login successful — pass user & token to parent (App)
-      onLogin(data.user, data.token);
-    } catch (err) {
+      // Login successful
+      if (selectedRole === 'with-cards') {
+        setPendingLoginData({ user: data.user, token: data.token });
+        setCurrentView('service-select');
+      } else {
+        onLogin(data.user, data.token);
+      }
+    } catch {
       setError('Unable to connect to the server. Please try again.');
       setIsLoading(false);
     }
@@ -95,6 +102,14 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
     } else if (selectedRole === 'with-cards') {
       // "With Cards" also goes to sign-in
       setCurrentView('sign-in');
+    }
+  };
+
+  const handleServiceSelect = () => {
+    if (pendingLoginData) {
+      // Add logic here to store the selected service if needed
+      // Currently, just proceed to login with the pending data
+      onLogin(pendingLoginData.user, pendingLoginData.token);
     }
   };
 
@@ -150,7 +165,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
                 </button>
               </div>
             </div>
-          ) : (
+          ) : currentView === 'sign-in' ? (
             /* ── Sign In View ── */
             <div className="view-animate" key="sign-in">
               <button className="btn-back" onClick={handleBack}>
@@ -159,7 +174,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
 
               <div className="role-header">
                 <h1>Sign In</h1>
-                <p>Enter your credentials to continue.</p>
+                <p>{selectedRole === 'with-cards' ? 'Enter your card number and email to continue.' : 'Enter your credentials to continue.'}</p>
               </div>
 
               {error && (
@@ -169,33 +184,65 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
               )}
 
               <form className="sign-in-form" onSubmit={handleSignIn}>
-                <div className="form-group">
-                  <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+                {selectedRole === 'with-cards' ? (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="cardNumber">Card Number</label>
+                      <input
+                        id="cardNumber"
+                        type="text"
+                        placeholder="Enter your card number"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="email">Email</label>
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="email">Email</label>
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="password">Password</label>
+                      <input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div className="form-group">
-                  <label htmlFor="password">Password</label>
-                  <input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <a href="#" className="forgot-password">Forgot password?</a>
+                {selectedRole !== 'with-cards' && (
+                  <a href="#" className="forgot-password">Forgot password?</a>
+                )}
 
                 <button
                   type="submit"
@@ -206,6 +253,32 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
                   {!isLoading && <span className="btn-arrow">→</span>}
                 </button>
               </form>
+            </div>
+          ) : (
+            /* ── Service Select View ── */
+            <div className="view-animate" key="service-select">
+              <div className="role-header">
+                <h1>Select a Service</h1>
+                <p>What would you like to do today?</p>
+              </div>
+
+              <div className="service-grid">
+                <button className="service-card" onClick={() => handleServiceSelect()}>
+                  <span className="icon">☕</span>
+                  <h2>Cafe Order</h2>
+                  <p>Order food and drinks</p>
+                </button>
+                <button className="service-card" onClick={() => handleServiceSelect()}>
+                  <span className="icon">📚</span>
+                  <h2>Library</h2>
+                  <p>Borrow or return books</p>
+                </button>
+                <button className="service-card" onClick={() => handleServiceSelect()}>
+                  <span className="icon">🛒</span>
+                  <h2>Visit Store</h2>
+                  <p>Take things from the store</p>
+                </button>
+              </div>
             </div>
           )}
 
