@@ -72,7 +72,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, loginType: selectedRole }),
       });
 
       const data = await res.json();
@@ -264,17 +264,23 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
 
               <div className="service-grid">
                 <button className="service-card" onClick={() => handleServiceSelect()}>
-                  <span className="icon">☕</span>
+                  <span className="icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                  </span>
                   <h2>Cafe Order</h2>
                   <p>Order food and drinks</p>
                 </button>
                 <button className="service-card" onClick={() => handleServiceSelect()}>
-                  <span className="icon">📚</span>
+                  <span className="icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                  </span>
                   <h2>Library</h2>
                   <p>Borrow or return books</p>
                 </button>
                 <button className="service-card" onClick={() => handleServiceSelect()}>
-                  <span className="icon">🛒</span>
+                  <span className="icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                  </span>
                   <h2>Visit Store</h2>
                   <p>Take things from the store</p>
                 </button>

@@ -10,7 +10,7 @@ const upload = multer({ storage });
 
 router.get('/', protect, async (req, res) => {
   try {
-    const filter = (req.user.role === 'reporter' || req.user.role === 'dormparent') ? { reportedBy: req.user._id } : {};
+    const filter = (req.user.role === 'reporter' || req.user.role === 'dorm parent') ? { reportedBy: req.user._id } : {};
 
     const reports = await Report.find(filter)
       .populate('reportedBy', 'name email role')
@@ -29,7 +29,7 @@ router.get('/', protect, async (req, res) => {
 router.get('/all', protect, async (req, res) => {
   try {
     const filter = {};
-    if (req.user.role === 'maintenance' && req.user.specialization) {
+    if (req.user.role === 'maintenance worker' && req.user.specialization) {
       const spec = req.user.specialization.toLowerCase();
       let categoryMatch = req.user.specialization; // Fallback
 

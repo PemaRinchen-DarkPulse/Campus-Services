@@ -8,6 +8,9 @@ interface UserData {
   email: string;
   role: string;
   status?: string;
+  cardNumber?: string;
+  password?: string;
+  specialization?: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -89,7 +92,7 @@ export function UsersManagement() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ ...formData, password: 'password123' }) // Default password for new users
+          body: JSON.stringify(formData)
         });
         if (res.ok) {
           fetchUsers();
@@ -176,7 +179,7 @@ export function UsersManagement() {
                     </div>
                   </td>
                   <td>{u.email}</td>
-                  <td><span className="role-chip">{u.role}</span></td>
+                  <td><span className="role-chip" style={{textTransform: 'capitalize'}}>{u.role}</span></td>
                   <td>
                     {u.status && <span className={`status-chip ${u.status.toLowerCase()}`}>{u.status}</span>}
                   </td>
@@ -269,26 +272,63 @@ export function UsersManagement() {
                     onChange={e => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
-                <div className="form-group" style={{ width: '45%' }}>
-                  <label>Role</label>
-                  <select 
-                    value={formData.role || 'student'} 
-                    onChange={e => setFormData({...formData, role: e.target.value})}
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
-                    <option value="student">Student</option>
-                    <option value="Reporter">Reporter</option>
-                  </select>
+                <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
+                  <div className="form-group" style={{ flex: '0 0 45%' }}>
+                    <label>Role</label>
+                    <select 
+                      value={formData.role || 'student'} 
+                      onChange={e => setFormData({...formData, role: e.target.value})}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="store manager">Store Manager</option>
+                      <option value="cafe manager">Cafe Manager</option>
+                      <option value="reporter">Reporter</option>
+                      <option value="maintenance worker">Maintenance Worker</option>
+                      <option value="dorm parent">Dorm Parent</option>
+                      <option value="student">Student</option>
+                      <option value="librarian">Librarian</option>
+                    </select>
+                  </div>
+                  {formData.role === 'maintenance worker' && (
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Specialization</label>
+                      <select 
+                        value={formData.specialization || ''} 
+                        onChange={e => setFormData({...formData, specialization: e.target.value})}
+                        required
+                      >
+                        <option value="" disabled>Select Specialization</option>
+                        <option value="plumber">Plumber</option>
+                        <option value="electrician">Electrician</option>
+                        <option value="carpenter">Carpenter</option>
+                        <option value="hvac">HVAC Technician</option>
+                        <option value="general">General Maintenance</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
-                <div className="form-group">
-                  <label>Password</label>
-                  <input 
-                    type="password" 
-                    placeholder={editingUser ? "Leave blank to keep current" : "Enter temporary password"}
-                    /* Password state handled backend-side in current mocked context */
-                  />
-                </div>
+                {formData.role === 'student' ? (
+                  <div className="form-group">
+                    <label>Card Number</label>
+                    <input 
+                      type="text" 
+                      required={!editingUser}
+                      placeholder="e.g., 123456789"
+                      value={formData.cardNumber || ''}
+                      onChange={e => setFormData({...formData, cardNumber: e.target.value})}
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label>Password</label>
+                    <input 
+                      type="password" 
+                      placeholder={editingUser ? "Leave blank to keep current" : "Enter temporary password"}
+                      value={formData.password || ''}
+                      onChange={e => setFormData({...formData, password: e.target.value})}
+                    />
+                  </div>
+                )}
               </form>
               ) : (
                 <div className="bulk-upload-section">

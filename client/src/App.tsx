@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { RoleSelection } from './components/RoleSelection/RoleSelection'
 import { UsersManagement } from './components/UsersManagement/UsersManagement'
+import { CafeMenu } from './components/CafeMenu/CafeMenu'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -94,7 +95,9 @@ const DUMMY_STUDENTS = [
 ];
 
 function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<string>(user.role === 'admin' ? 'Users' : 'Students');
+  const [activeTab, setActiveTab] = useState<string>(
+    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : 'Students'
+  );
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
 
   const toggleDropdown = (id: string, e: React.MouseEvent) => {
@@ -137,6 +140,22 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
               <SidebarItem icon="users" label="Users" active={activeTab === 'Users'} onClick={() => setActiveTab('Users')} />
               <SidebarItem icon="bar-chart" label="Reports & Analytics" active={activeTab === 'Reports & Analytics'} onClick={() => setActiveTab('Reports & Analytics')} />
               <SidebarItem icon="settings" label="System" active={activeTab === 'System'} onClick={() => setActiveTab('System')} />
+            </div>
+          </>
+        ) : user.role === 'cafe manager' ? (
+          <>
+            <div className="sidebar-section">
+              <div className="sidebar-title">MAIN MENU</div>
+              <SidebarItem icon="home" label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
+              <SidebarItem icon="shopping-bag" label="Order" active={activeTab === 'Order'} onClick={() => setActiveTab('Order')} />
+              <SidebarItem icon="coffee" label="Menu" active={activeTab === 'Menu'} onClick={() => setActiveTab('Menu')} />
+              <SidebarItem icon="file-text" label="Billing" active={activeTab === 'Billing'} onClick={() => setActiveTab('Billing')} />
+              <SidebarItem icon="bar-chart" label="Reports" active={activeTab === 'Reports'} onClick={() => setActiveTab('Reports')} />
+            </div>
+
+            <div className="sidebar-section">
+              <div className="sidebar-title">ADMINISTRATION</div>
+              <SidebarItem icon="settings" label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
             </div>
           </>
         ) : (
@@ -196,8 +215,8 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             </button>
             <div className="user-profile">
               <div className="user-info">
-                <span className="user-name">Anna Mironova</span>
-                <span className="user-role">Teacher</span>
+                <span className="user-name">{user.name}</span>
+                <span className="user-role">{user.role === 'admin' ? 'Admin' : user.role === 'cafe manager' ? 'Cafe Manager' : 'Teacher'}</span>
               </div>
               <div className="teacher-avatar" style={{background: '#1f2937'}}></div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M19 9l-7 7-7-7" /></svg>
@@ -209,6 +228,8 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
         <div className="page-content">
           {activeTab === 'Users' ? (
             <UsersManagement />
+          ) : activeTab === 'Menu' ? (
+            <CafeMenu />
           ) : (
             <>
               <div className="page-header">
@@ -289,7 +310,7 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
                       <td>{s.missing}</td>
                       <td style={{ position: 'relative' }}>
                         <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" title="Actions" onClick={(e) => toggleDropdown(s.id, e)}><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" onClick={(e) => toggleDropdown(s.id, e)}><title>Actions</title><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
                         </div>
                         {dropdownOpenId === s.id && (
                           <div className="dropdown-menu">

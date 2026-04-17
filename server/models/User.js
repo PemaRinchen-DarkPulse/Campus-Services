@@ -21,14 +21,19 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
       select: false, // don't return password by default
     },
+    cardNumber: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null/undefined without breaking uniqueness
+    },
     phone: {
       type: String,
       default: '',
     },
     role: {
       type: String,
-      enum: ['admin', 'reporter', 'storemanager', 'maintenance', 'dormparent'],
-      default: 'reporter',
+      enum: ['admin', 'store manager', 'cafe manager', 'reporter', 'maintenance worker', 'dorm parent', 'student', 'librarian'],
+      default: 'student',
     },
     specialization: {
       type: String,
