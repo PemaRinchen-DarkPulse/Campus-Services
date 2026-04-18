@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { RoleSelection } from './components/RoleSelection/RoleSelection'
 import { UsersManagement } from './components/UsersManagement/UsersManagement'
 import { CafeMenu } from './components/CafeMenu/CafeMenu'
+import { CafeOrders } from './components/CafeOrders/CafeOrders'
+import StudentSettings from './components/StudentSettings/StudentSettings'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -18,9 +20,11 @@ interface User {
 function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [studentService, setStudentService] = useState<string | null>(null) // new state for student service selection
 
   // On mount, check if there's a saved token and validate it
   useEffect(() => {
+    let isMounted = true;
     const token = localStorage.getItem('token')
     const savedUser = localStorage.getItem('user')
 
@@ -34,17 +38,24 @@ function App() {
           throw new Error('Invalid token')
         })
         .then((data) => {
-          setUser(data.user)
-          setLoading(false)
+          if (isMounted) {
+            setUser(data.user)
+            setLoading(false)
+          }
         })
         .catch(() => {
           // Token is invalid, clear storage
           localStorage.removeItem('token')
           localStorage.removeItem('user')
-          setLoading(false)
+          if (isMounted) setLoading(false)
         })
     } else {
-      setLoading(false)
+      setTimeout(() => {
+        if (isMounted) setLoading(false)
+      }, 0)
+    }
+    return () => {
+      isMounted = false;
     }
   }, [])
 
@@ -52,12 +63,14 @@ function App() {
     localStorage.setItem('token', token)
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
+    setStudentService(null)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)
+    setStudentService(null)
   }
 
   // Show a brief loading state while checking for existing session
@@ -71,6 +84,167 @@ function App() {
 
   // If user is logged in → show the new Owlee-like Dashboard
   if (user) {
+    // If the user logged in using a card (is a student)
+    if (user.role === 'student') {
+      if (studentService === 'cafe') {
+        // Pass user to CafeOrders to switch to POS mode for that student
+        return (
+          <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F3F4F6', fontFamily: 'Inter, sans-serif' }}>
+            <div className="top-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button 
+                  onClick={() => setStudentService(null)} 
+                  style={{ background: '#f3f4f6', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563', fontSize: '14px', fontWeight: '500' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 19l-7-7 7-7" /></svg>
+                  Back
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#3b82f6' }}><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z M6 1v3 M10 1v3 M14 1v3" /></svg>
+                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Cafe Ordering</span>
+                </div>
+              </div>
+
+              <div className="search-bar" style={{ marginLeft: 'auto', marginRight: '24px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input type="text" placeholder="Search..." />
+              </div>
+
+              <div className="header-actions">
+                <button className="icon-btn" onClick={() => setStudentService('settings')} title="Settings">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+                <div className="user-profile" onClick={() => setStudentService('settings')} style={{ cursor: 'pointer' }}>
+                  <div className="user-info">
+                    <span className="user-name">{user.name}</span>
+                    <span className="user-role" style={{ textTransform: 'capitalize' }}>Student</span>
+                  </div>
+                  <div className="user-avatar" style={{ width: '40px', height: '40px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#ef4444', marginLeft: '4px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, padding: '32px', overflow: 'hidden' }}>
+              <CafeOrders studentUser={user} />
+            </div>
+          </div>
+        )
+      }
+
+      if (studentService === 'settings') {
+        return (
+          <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F3F4F6', fontFamily: 'Inter, sans-serif' }}>
+            <div className="top-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <button 
+                  onClick={() => setStudentService(null)} 
+                  style={{ background: '#f3f4f6', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#4b5563', fontSize: '14px', fontWeight: '500' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 19l-7-7 7-7" /></svg>
+                  Back
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#3b82f6' }}><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <span style={{ fontSize: '16px', fontWeight: '600', color: '#111827' }}>Account Settings</span>
+                </div>
+              </div>
+
+              <div className="header-actions" style={{ marginLeft: 'auto' }}>
+                <div className="user-profile" onClick={handleLogout} style={{ cursor: 'pointer' }}>
+                  <div className="user-info">
+                    <span className="user-name">{user.name}</span>
+                    <span className="user-role" style={{ textTransform: 'capitalize' }}>Log out</span>
+                  </div>
+                  <div className="user-avatar" style={{ width: '40px', height: '40px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#ef4444', marginLeft: '4px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, padding: '32px', overflow: 'hidden' }}>
+              <StudentSettings user={user} credits={150} />
+            </div>
+          </div>
+        )
+      }
+
+      return (
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F3F4F6', fontFamily: 'Inter, sans-serif' }}>
+          <div className="top-header">
+            <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 0 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect width="24" height="24" rx="6" fill="#1f2937" />
+                <circle cx="12" cy="12" r="5" fill="#facc15" />
+              </svg>
+              <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>Campus Services</span>
+            </div>
+
+            <div className="search-bar" style={{ marginLeft: 'auto', marginRight: '24px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input type="text" placeholder="Search..." />
+            </div>
+
+              <div className="header-actions">
+                <button className="icon-btn" onClick={() => setStudentService('settings')} title="Settings">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+                <div className="user-profile" onClick={() => setStudentService('settings')} style={{ cursor: 'pointer' }}>
+                  <div className="user-info">
+                    <span className="user-name">{user.name}</span>
+                    <span className="user-role" style={{ textTransform: 'capitalize' }}>Student</span>
+                  </div>
+                  <div className="user-avatar" style={{ width: '40px', height: '40px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#ef4444', marginLeft: '4px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  </div>
+                </div>
+              </div>
+          </div>
+          
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <h1 style={{ marginBottom: '8px', fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>Welcome, {user.name}!</h1>
+            <p style={{ color: '#6b7280', marginBottom: '40px', fontSize: '16px' }}>Select a service you would like to access.</p>
+            
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '800px' }}>
+            {/* Service Cards */}
+            <div 
+              onClick={() => setStudentService('cafe')}
+              style={{ background: 'white', width: '220px', padding: '32px 24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
+              onMouseOver={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              <div style={{ width: '64px', height: '64px', margin: '0 auto 16px', background: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z M6 1v3 M10 1v3 M14 1v3" /></svg>
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#1f2937' }}>Cafe Orders</h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>Browse menu and order</p>
+            </div>
+            
+            <div 
+              style={{ background: 'white', width: '220px', padding: '32px 24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center', opacity: 0.7, cursor: 'not-allowed' }}
+            >
+              <div style={{ width: '64px', height: '64px', margin: '0 auto 16px', background: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#1f2937' }}>Library</h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>Coming soon</p>
+            </div>
+
+            <div 
+              style={{ background: 'white', width: '220px', padding: '32px 24px', borderRadius: '16px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center', opacity: 0.7, cursor: 'not-allowed' }}
+            >
+              <div style={{ width: '64px', height: '64px', margin: '0 auto 16px', background: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#1f2937' }}>Store</h3>
+              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>Coming soon</p>
+            </div>
+          </div>
+          </div>
+        </div>
+      )
+    }
+
     return <DashboardLayout user={user} onLogout={handleLogout} />
   }
 
@@ -82,21 +256,21 @@ export default App
 // --- Dashboard Implementation ---
 
 const DUMMY_STUDENTS = [
-  { id: '447', name: 'Robert Fox', gender: 'Male', age: 17, class: '1A', grade: '9.3', missing: 0 },
-  { id: '877', name: 'Marvin McKinney', gender: 'Male', age: 6, class: '1B', grade: '-', missing: 0 },
-  { id: '556', name: 'Darrell Steward', gender: 'Female', age: 10, class: '4C', grade: '8.6', missing: 6 },
-  { id: '432', name: 'Savannah Nguyen', gender: 'Male', age: 11, class: '4C', grade: '7.2', missing: 6 },
-  { id: '536', name: 'Dianne Russell', gender: 'Female', age: 16, class: '11B', grade: '8.2', missing: 10 },
-  { id: '703', name: 'Cody Fisher', gender: 'Female', age: 11, class: '4A', grade: '5.2', missing: 20 },
-  { id: '922', name: 'Leslie Alexander', gender: 'Female', age: 12, class: '5A', grade: '6.5', missing: 0 },
-  { id: '540', name: 'Albert Flores', gender: 'Male', age: 14, class: '7B', grade: '7.5', missing: 0 },
-  { id: '426', name: 'Ralph Edwards', gender: 'Male', age: 17, class: '11C', grade: '9.5', missing: 1 },
-  { id: '883', name: 'Darlene Robertson', gender: 'Female', age: 18, class: '1A', grade: '10', missing: 0 },
+  { id: '447', name: 'Karma Phuntsho', gender: 'Male', age: 17, class: '1A', grade: '9.3', missing: 0 },
+  { id: '877', name: 'Sonam Deki', gender: 'Female', age: 6, class: '1B', grade: '-', missing: 0 },
+  { id: '556', name: 'Jigme Wangchuk', gender: 'Male', age: 10, class: '4C', grade: '8.6', missing: 6 },
+  { id: '432', name: 'Dechen Choden', gender: 'Female', age: 11, class: '4C', grade: '7.2', missing: 6 },
+  { id: '536', name: 'Tenzin Gyeltshen', gender: 'Male', age: 16, class: '11B', grade: '8.2', missing: 10 },
+  { id: '703', name: 'Kinley Dorji', gender: 'Male', age: 11, class: '4A', grade: '5.2', missing: 20 },
+  { id: '922', name: 'Tshering Yangzom', gender: 'Female', age: 12, class: '5A', grade: '6.5', missing: 0 },
+  { id: '540', name: 'Pema Zangmo', gender: 'Female', age: 14, class: '7B', grade: '7.5', missing: 0 },
+  { id: '426', name: 'Ugyen Tobgay', gender: 'Male', age: 17, class: '11C', grade: '9.5', missing: 1 },
+  { id: '883', name: 'Sangay Choden', gender: 'Female', age: 18, class: '1A', grade: '10', missing: 0 },
 ];
 
 function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<string>(
-    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : 'Students'
+    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : user.role === 'student' ? 'Settings' : 'Students'
   );
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
 
@@ -114,7 +288,7 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             <rect width="24" height="24" rx="6" fill="#1f2937" />
             <circle cx="12" cy="12" r="5" fill="#facc15" />
           </svg>
-          <span>Owlee</span>
+          <span>Campus Services</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', cursor: 'pointer' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -147,7 +321,7 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             <div className="sidebar-section">
               <div className="sidebar-title">MAIN MENU</div>
               <SidebarItem icon="home" label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
-              <SidebarItem icon="shopping-bag" label="Order" active={activeTab === 'Order'} onClick={() => setActiveTab('Order')} />
+              <SidebarItem icon="shopping-bag" label="Orders" active={activeTab === 'Orders'} onClick={() => setActiveTab('Orders')} />
               <SidebarItem icon="coffee" label="Menu" active={activeTab === 'Menu'} onClick={() => setActiveTab('Menu')} />
               <SidebarItem icon="file-text" label="Billing" active={activeTab === 'Billing'} onClick={() => setActiveTab('Billing')} />
               <SidebarItem icon="bar-chart" label="Reports" active={activeTab === 'Reports'} onClick={() => setActiveTab('Reports')} />
@@ -173,11 +347,14 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
               <SidebarItem icon="book" label="Subjects" chevron active={activeTab === 'Subjects'} onClick={() => setActiveTab('Subjects')} />
               <SidebarItem icon="clipboard" label="Assignment" badge="2" active={activeTab === 'Assignment'} onClick={() => setActiveTab('Assignment')} />
               <SidebarItem icon="library" label="Library" active={activeTab === 'Library'} onClick={() => setActiveTab('Library')} />
+              {user.role === 'student' && (
+                <SidebarItem icon="settings" label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
+              )}
             </div>
 
             <div className="sidebar-section">
               <div className="sidebar-title">TEACHERS</div>
-              {['Svetlana Kozakova', 'Olga Melnichenko', 'Dmitriy Berbatov', 'Ekaterina Baranova', 'Oleg Gerasimov'].map(t => (
+              {['Tashi Wangmo', 'Karma Thinley', 'Dechen Zangmo', 'Sonam Dorji', 'Karma Yeshey'].map(t => (
                 <div key={t} className="teacher-item">
                   <div className="teacher-avatar"></div>
                   <span>{t}</span>
@@ -207,16 +384,26 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
           </div>
 
           <div className="header-actions">
-            <button className="icon-btn">
+            <button 
+              className={`icon-btn ${activeTab === 'Settings' ? 'active' : ''}`}
+              onClick={() => user.role === 'student' && setActiveTab('Settings')}
+              title={user.role === 'student' ? 'Settings' : undefined}
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
             <button className="icon-btn has-notification">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
             </button>
-            <div className="user-profile">
+            <div 
+              className="user-profile" 
+              onClick={() => user.role === 'student' && setActiveTab('Settings')}
+              style={{ cursor: user.role === 'student' ? 'pointer' : 'default' }}
+            >
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
-                <span className="user-role">{user.role === 'admin' ? 'Admin' : user.role === 'cafe manager' ? 'Cafe Manager' : 'Teacher'}</span>
+                <span className="user-role" style={{ textTransform: 'capitalize' }}>
+                  {user.role === 'cafe manager' ? 'Cafe Manager' : user.role}
+                </span>
               </div>
               <div className="teacher-avatar" style={{background: '#1f2937'}}></div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M19 9l-7 7-7-7" /></svg>
@@ -230,6 +417,10 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             <UsersManagement />
           ) : activeTab === 'Menu' ? (
             <CafeMenu />
+          ) : activeTab === 'Orders' ? (
+            <CafeOrders />
+          ) : activeTab === 'Settings' && user.role === 'student' ? (
+            <StudentSettings user={user} credits={150} />
           ) : (
             <>
               <div className="page-header">

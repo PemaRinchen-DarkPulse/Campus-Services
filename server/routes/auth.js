@@ -251,7 +251,7 @@ router.post('/bulk-register', protect, async (req, res) => {
           results.push({ email, name, status: 'error', message: 'Email already exists' });
           continue;
         }
-        await User.create({ name, email, password, phone: phone || '', role: role || 'reporter', specialization: specialization || '' });
+        await User.create({ name, email, password, phone: phone || '', role: role || 'teacher', specialization: specialization || '' });
         results.push({ email, name, status: 'success', message: 'Created' });
       } catch (err) {
         results.push({ email, name, status: 'error', message: err.message || 'Failed to create' });

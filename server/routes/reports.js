@@ -10,7 +10,7 @@ const upload = multer({ storage });
 
 router.get('/', protect, async (req, res) => {
   try {
-    const filter = (req.user.role === 'reporter' || req.user.role === 'dorm parent') ? { reportedBy: req.user._id } : {};
+    const filter = (req.user.role === 'teacher' || req.user.role === 'dorm parent') ? { reportedBy: req.user._id } : {};
 
     const reports = await Report.find(filter)
       .populate('reportedBy', 'name email role')

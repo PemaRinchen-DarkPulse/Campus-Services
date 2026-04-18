@@ -47,7 +47,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const [pendingLoginData, setPendingLoginData] = useState<{ user: User; token: string } | null>(null);
+  const [pendingLoginData] = useState<{ user: User; token: string } | null>(null);
 
   const handleRoleClick = (roleId: RoleId) => {
     setSelectedRole(roleId);
@@ -84,12 +84,7 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
       }
 
       // Login successful
-      if (selectedRole === 'with-cards') {
-        setPendingLoginData({ user: data.user, token: data.token });
-        setCurrentView('service-select');
-      } else {
-        onLogin(data.user, data.token);
-      }
+      onLogin(data.user, data.token);
     } catch {
       setError('Unable to connect to the server. Please try again.');
       setIsLoading(false);
@@ -267,8 +262,8 @@ export const RoleSelection: React.FC<RoleSelectionProps> = ({ onLogin }) => {
                   <span className="icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
                   </span>
-                  <h2>Cafe Order</h2>
-                  <p>Order food and drinks</p>
+                  <h2>Cafe Orders</h2>
+                  <p>Manage incoming cafe orders</p>
                 </button>
                 <button className="service-card" onClick={() => handleServiceSelect()}>
                   <span className="icon">

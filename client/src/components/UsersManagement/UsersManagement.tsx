@@ -282,7 +282,7 @@ export function UsersManagement() {
                       <option value="admin">Admin</option>
                       <option value="store manager">Store Manager</option>
                       <option value="cafe manager">Cafe Manager</option>
-                      <option value="reporter">Reporter</option>
+                      <option value="teacher">Teacher</option>
                       <option value="maintenance worker">Maintenance Worker</option>
                       <option value="dorm parent">Dorm Parent</option>
                       <option value="student">Student</option>
