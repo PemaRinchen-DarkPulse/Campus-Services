@@ -4,6 +4,9 @@ import { UsersManagement } from './components/UsersManagement/UsersManagement'
 import { CafeMenu } from './components/CafeMenu/CafeMenu'
 import { CafeOrders } from './components/CafeOrders/CafeOrders'
 import StudentSettings from './components/StudentSettings/StudentSettings'
+import { MyReport } from './components/MyReport/MyReport'
+import { AllIssues } from './components/AllIssues/AllIssues'
+import { MyMentees } from './components/MyMentees/MyMentees'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -15,6 +18,7 @@ interface User {
   phone?: string
   role: string
   specialization?: string
+  credits?: string | number
 }
 
 function App() {
@@ -163,7 +167,7 @@ function App() {
             </div>
             
             <div style={{ flex: 1, padding: '32px', overflow: 'hidden' }}>
-              <StudentSettings user={user} credits={150} />
+              <StudentSettings user={user} credits={parseFloat(String(user.credits || 0))} />
             </div>
           </div>
         )
@@ -256,21 +260,21 @@ export default App
 // --- Dashboard Implementation ---
 
 const DUMMY_STUDENTS = [
-  { id: '447', name: 'Karma Phuntsho', gender: 'Male', age: 17, class: '1A', grade: '9.3', missing: 0 },
-  { id: '877', name: 'Sonam Deki', gender: 'Female', age: 6, class: '1B', grade: '-', missing: 0 },
-  { id: '556', name: 'Jigme Wangchuk', gender: 'Male', age: 10, class: '4C', grade: '8.6', missing: 6 },
-  { id: '432', name: 'Dechen Choden', gender: 'Female', age: 11, class: '4C', grade: '7.2', missing: 6 },
-  { id: '536', name: 'Tenzin Gyeltshen', gender: 'Male', age: 16, class: '11B', grade: '8.2', missing: 10 },
-  { id: '703', name: 'Kinley Dorji', gender: 'Male', age: 11, class: '4A', grade: '5.2', missing: 20 },
-  { id: '922', name: 'Tshering Yangzom', gender: 'Female', age: 12, class: '5A', grade: '6.5', missing: 0 },
-  { id: '540', name: 'Pema Zangmo', gender: 'Female', age: 14, class: '7B', grade: '7.5', missing: 0 },
-  { id: '426', name: 'Ugyen Tobgay', gender: 'Male', age: 17, class: '11C', grade: '9.5', missing: 1 },
-  { id: '883', name: 'Sangay Choden', gender: 'Female', age: 18, class: '1A', grade: '10', missing: 0 },
+  { id: '447', name: 'Karma Phuntsho', gender: 'Male', age: 17, class: '7', grade: '9.3', missing: 0 },
+  { id: '877', name: 'Sonam Deki', gender: 'Female', age: 6, class: '8', grade: '-', missing: 0 },
+  { id: '556', name: 'Jigme Wangchuk', gender: 'Male', age: 10, class: '9', grade: '8.6', missing: 6 },
+  { id: '432', name: 'Dechen Choden', gender: 'Female', age: 11, class: '7', grade: '7.2', missing: 6 },
+  { id: '536', name: 'Tenzin Gyeltshen', gender: 'Male', age: 16, class: '8', grade: '8.2', missing: 10 },
+  { id: '703', name: 'Kinley Dorji', gender: 'Male', age: 11, class: '9', grade: '5.2', missing: 20 },
+  { id: '922', name: 'Tshering Yangzom', gender: 'Female', age: 12, class: '7', grade: '6.5', missing: 0 },
+  { id: '540', name: 'Pema Zangmo', gender: 'Female', age: 14, class: '8', grade: '7.5', missing: 0 },
+  { id: '426', name: 'Ugyen Tobgay', gender: 'Male', age: 17, class: '9', grade: '9.5', missing: 1 },
+  { id: '883', name: 'Sangay Choden', gender: 'Female', age: 18, class: '7', grade: '10', missing: 0 },
 ];
 
 function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<string>(
-    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : user.role === 'student' ? 'Settings' : 'Students'
+    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : user.role === 'teacher' ? 'Overview' : user.role === 'student' ? 'Settings' : 'Students'
   );
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
 
@@ -332,6 +336,21 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
               <SidebarItem icon="settings" label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
             </div>
           </>
+        ) : user.role === 'teacher' ? (
+          <>
+            <div className="sidebar-section">
+              <div className="sidebar-title">MAIN MENU</div>
+              <SidebarItem icon="home" label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
+              <SidebarItem icon="bar-chart" label="My Report" active={activeTab === 'My Report'} onClick={() => setActiveTab('My Report')} />
+              <SidebarItem icon="clipboard" label="All Issues" active={activeTab === 'All Issues'} onClick={() => setActiveTab('All Issues')} />
+              <SidebarItem icon="users" label="My Mentees" active={activeTab === 'My Mentees'} onClick={() => setActiveTab('My Mentees')} />
+            </div>
+
+            <div className="sidebar-section">
+              <div className="sidebar-title">ADMINISTRATION</div>
+              <SidebarItem icon="settings" label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
+            </div>
+          </>
         ) : (
           <>
             <div className="sidebar-section">
@@ -386,8 +405,8 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
           <div className="header-actions">
             <button 
               className={`icon-btn ${activeTab === 'Settings' ? 'active' : ''}`}
-              onClick={() => user.role === 'student' && setActiveTab('Settings')}
-              title={user.role === 'student' ? 'Settings' : undefined}
+              onClick={() => (user.role === 'student' || user.role === 'teacher') && setActiveTab('Settings')}
+              title={(user.role === 'student' || user.role === 'teacher') ? 'Settings' : undefined}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
@@ -396,8 +415,8 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             </button>
             <div 
               className="user-profile" 
-              onClick={() => user.role === 'student' && setActiveTab('Settings')}
-              style={{ cursor: user.role === 'student' ? 'pointer' : 'default' }}
+              onClick={() => (user.role === 'student' || user.role === 'teacher') && setActiveTab('Settings')}
+              style={{ cursor: (user.role === 'student' || user.role === 'teacher') ? 'pointer' : 'default' }}
             >
               <div className="user-info">
                 <span className="user-name">{user.name}</span>
@@ -420,7 +439,17 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
           ) : activeTab === 'Orders' ? (
             <CafeOrders />
           ) : activeTab === 'Settings' && user.role === 'student' ? (
-            <StudentSettings user={user} credits={150} />
+            <StudentSettings user={user} credits={parseFloat(String(user.credits || 0))} />
+          ) : user.role === 'teacher' && activeTab === 'Settings' ? (
+            <div style={{ padding: '24px' }}><h2>Teacher Settings</h2><p>Settings coming soon...</p></div>
+          ) : user.role === 'teacher' && activeTab === 'Overview' ? (
+            <div style={{ padding: '24px' }}><h2>Overview</h2><p>Welcome to your overview page.</p></div>
+          ) : user.role === 'teacher' && activeTab === 'My Report' ? (
+            <MyReport />
+          ) : user.role === 'teacher' && activeTab === 'All Issues' ? (
+            <AllIssues />
+          ) : user.role === 'teacher' && activeTab === 'My Mentees' ? (
+            <MyMentees />
           ) : (
             <>
               <div className="page-header">
@@ -487,7 +516,11 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
                 <tbody>
                   {DUMMY_STUDENTS.map((s) => (
                     <tr key={s.id}>
-                      <td>{s.id}</td>
+                      <td>
+                        <span title={s.id} style={{ cursor: 'pointer', borderBottom: '1px dotted #888' }}>
+                          {s.id?.slice(-5)}
+                        </span>
+                      </td>
                       <td>
                         <div className="student-cell">
                           <img className="student-avatar" src={`https://ui-avatars.com/api/?name=${s.name}&background=random`} alt={s.name} />

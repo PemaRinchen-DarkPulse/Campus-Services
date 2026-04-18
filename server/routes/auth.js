@@ -24,6 +24,7 @@ const sendAuthResponse = (res, statusCode, user) => {
       phone: user.phone,
       role: user.role,
       specialization: user.specialization,
+      credits: user.credits,
     },
   });
 };
@@ -136,14 +137,15 @@ router.get('/me', protect, async (req, res) => {
       phone: req.user.phone,
       role: req.user.role,
       specialization: req.user.specialization,
+      credits: req.user.credits,
     },
   });
 });
 
-// Admin routes for User Management
+// Admin and Teacher routes for User Management
 router.get('/users', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
       return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
     }
     const users = await User.find().select('-password');
@@ -184,32 +186,30 @@ router.post('/users', protect, async (req, res) => {
 
 router.put('/users/:id', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
       return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
     }
     
+    const { role, cardNumber, password, mentor, ...updateData } = req.body;
+    
     // If student card number is being changed, update their password so they can log in
-    if (req.body.role === 'student' && req.body.cardNumber) {
-      req.body.password = req.body.cardNumber;
-      // Note: Model validations and pre-save hooks won't run with findByIdAndUpdate if password is included
-      // We must fetch the user, update the fields, and save to trigger password hashing.
+    if (role === 'student' && cardNumber) {
+      updateData.cardNumber = cardNumber;
+      updateData.password = cardNumber; // will be hashed in pre-save hook
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ success: false, message: 'User not found' });
       
-      const { name, email, role, status, cardNumber, password, specialization } = req.body;
-      if (name) user.name = name;
-      if (email) user.email = email;
-      if (role) user.role = role;
-      if (status) user.status = status;
-      if (cardNumber) user.cardNumber = cardNumber;
-      if (specialization !== undefined) user.specialization = specialization;
-      if (password) user.password = password; // will be hashed in pre-save hook
+      Object.assign(user, updateData);
       
       await user.save();
       return res.status(200).json({ success: true, data: user });
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (req.user.role === 'teacher' && updateData.mentor === undefined) {
+      updateData.mentor = req.user._id;
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, { $set: updateData }, { new: true, runValidators: true });
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     res.status(200).json({ success: true, data: user });
   } catch (err) {
@@ -276,6 +276,25 @@ router.get('/users', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server Error fetching users',
+    });
+  }
+});
+
+// Get mentees for a teacher
+router.get('/mentees', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+    const mentees = await User.find({ mentor: req.user._id }).select('-password');
+    res.status(200).json({
+      success: true,
+      data: mentees,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error fetching mentees',
     });
   }
 });

@@ -173,8 +173,32 @@ export default function StudentSettings({ user, credits }: StudentSettingsProps)
             <div className="settings-card" style={{ flex: 1, overflowY: 'auto' }}>
               <h3>Cafe Order History</h3>
               {loadingOrders ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-light)' }}>
-                  Loading your orders...
+                <div className="order-history-list">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div key={`skeleton-${index}`} className="order-history-item skeleton-order-card" style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div>
+                          <div className="skeleton-line medium" style={{ marginBottom: '8px' }}></div>
+                          <div className="skeleton-line short"></div>
+                        </div>
+                        <div className="skeleton-chip"></div>
+                      </div>
+                      <div style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}><div className="skeleton-line short"></div><div className="skeleton-line long"></div></div>
+                          <div className="skeleton-line short"></div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}><div className="skeleton-line short"></div><div className="skeleton-line medium"></div></div>
+                          <div className="skeleton-line short"></div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #e5e7eb', paddingTop: '12px' }}>
+                        <div className="skeleton-line short"></div>
+                        <div className="skeleton-line medium"></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : orders.length === 0 ? (
                 <div className="empty-state">

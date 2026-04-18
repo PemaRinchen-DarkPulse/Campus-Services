@@ -39,6 +39,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    grade: {
+      type: String,
+      default: '',
+    },
+    credits: {
+      type: String,
+      default: '',
+    },
+    mentor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   { timestamps: true }
 );

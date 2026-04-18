@@ -152,7 +152,7 @@ export function UsersManagement() {
       </div>
 
       <div className="table-box">
-        <div className="data-table-container">
+        <div className="data-table-container" style={{ borderRadius: '12px' }}>
           <table>
             <thead>
               <tr>
@@ -165,7 +165,32 @@ export function UsersManagement() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <tr key={`skeleton-${index}`}>
+                    <td><div className="skeleton-line short"></div></td>
+                    <td>
+                      <div className="student-cell">
+                        <div className="skeleton-avatar"></div>
+                        <div className="skeleton-line medium"></div>
+                      </div>
+                    </td>
+                    <td><div className="skeleton-line long"></div></td>
+                    <td><div className="skeleton-chip"></div></td>
+                    <td><div className="skeleton-chip"></div></td>
+                    <td>
+                      <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
+                        <div className="skeleton-icon"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : users.length === 0 ? (
+                <tr>
+                   <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No users found.</td>
+                </tr>
+              ) : (
+                users.map(u => (
                 <tr key={u.id}>
                   <td>
                     <span title={u.id} style={{ cursor: 'pointer', borderBottom: '1px dotted #888' }}>
@@ -185,7 +210,7 @@ export function UsersManagement() {
                   </td>
                   <td style={{ position: 'relative' }}>
                     <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" title="Actions" onClick={(e) => { if (u.id) toggleDropdown(u.id, e); }}><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" role="button" aria-label="Actions" onClick={(e) => { if (u.id) toggleDropdown(u.id, e); }}><title>Actions</title><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
                     </div>
                     {u.id && dropdownOpenId === u.id && (
                       <div className="dropdown-menu">
@@ -201,7 +226,7 @@ export function UsersManagement() {
                     )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
 
