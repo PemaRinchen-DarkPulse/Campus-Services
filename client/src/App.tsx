@@ -17,6 +17,7 @@ interface User {
   id: string
   name: string
   email: string
+  cardId?: string
   phone?: string
   role: string
   specialization?: string
@@ -111,12 +112,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="search-bar" style={{ marginLeft: 'auto', marginRight: '24px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" placeholder="Search..." />
-              </div>
-
-              <div className="header-actions">
+              <div className="header-actions" style={{ marginLeft: 'auto' }}>
                 <button className="icon-btn" onClick={() => setStudentService('settings')} title="Settings">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
@@ -134,7 +130,7 @@ function App() {
             
             <div style={{ flex: 1, padding: '32px', overflow: 'hidden' }}>
               <CafeOrders 
-                studentUser={user} 
+                studentUser={{ id: user.id, name: user.name, cardId: user.cardId ?? '', role: user.role, credits: user.credits }} 
                 onOrderPlaced={(total) => {
                   setUser((prev) => {
                     if (!prev) return prev;
@@ -200,12 +196,7 @@ function App() {
               <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827' }}>Campus Services</span>
             </div>
 
-            <div className="search-bar" style={{ marginLeft: 'auto', marginRight: '24px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input type="text" placeholder="Search..." />
-            </div>
-
-              <div className="header-actions">
+              <div className="header-actions" style={{ marginLeft: 'auto' }}>
                 <button className="icon-btn" onClick={() => setStudentService('settings')} title="Settings">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
@@ -429,11 +420,6 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
         {/* Dynamic Page Content */}
         <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#111827' }}>{activeTab}</h1>
-            <div className="search-bar" style={{ width: '300px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', border: '1px solid #e5e7eb', padding: '8px 12px', borderRadius: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input type="text" placeholder="Search..." style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: '#1f2937' }} />
-            </div>
           </div>
 
           {activeTab === 'Users' ? (

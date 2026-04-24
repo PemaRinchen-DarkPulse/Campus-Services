@@ -22,6 +22,9 @@ export function MyDorm() {
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
 
   const fetchAssignments = async () => {
     try {
@@ -42,6 +45,12 @@ export function MyDorm() {
 
   useEffect(() => {
     fetchAssignments();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -68,6 +77,7 @@ export function MyDorm() {
 
   const handleOpenModal = () => {
     setFormData({});
+    setEditId(null);
     setIsModalOpen(true);
   };
 
@@ -76,6 +86,34 @@ export function MyDorm() {
     setFormData({});
     setSearchQuery('');
     setIsDropdownOpen(false);
+    setEditId(null);
+  };
+
+  const handleEdit = (assignment: RoomAssignment) => {
+    setFormData({ ...assignment });
+    setEditId(assignment._id || null);
+    setIsModalOpen(true);
+    setActiveMenuId(null);
+  };
+
+  const handleDelete = async (id: string | undefined) => {
+    if (!id || !window.confirm('Are you sure you want to delete this assignment?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/rooms/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchAssignments();
+      } else {
+        alert(data.message || 'Failed to delete');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting assignment');
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -87,13 +125,16 @@ export function MyDorm() {
         cardNumber: formData.cardNumber || '',
         fullName: formData.fullName || '',
         email: formData.email || '',
-        grade: formData.grade || '',
+        grade: formData.grade || '7',
         dorm: formData.dorm || '',
         roomNumber: formData.roomNumber || ''
       };
 
-      const res = await fetch(`${API_BASE_URL}/api/rooms`, {
-        method: 'POST',
+      const url = editId ? `${API_BASE_URL}/api/rooms/${editId}` : `${API_BASE_URL}/api/rooms`;
+      const method = editId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -137,7 +178,7 @@ export function MyDorm() {
           <table>
             <thead>
               <tr>
-                <th>CARD NUMBER</th>
+                <th>USER ID</th>
                 <th>FULL NAME</th>
                 <th>EMAIL</th>
                 <th>GRADE</th>
@@ -168,11 +209,16 @@ export function MyDorm() {
                   <td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No dormers assigned yet.</td>
                 </tr>
               ) : (
-                assignments.map(a => (
+                assignments.map(a => {
+                  const student = students.find(s => String(s.cardNumber) === String(a.cardNumber));
+                  const fullId = student ? (student._id || student.id) : a.cardNumber;
+                  const displayId = fullId ? String(fullId).slice(-5).toUpperCase() : '';
+                  
+                  return (
                   <tr key={a._id}>
                     <td>
-                      <span title={a.cardNumber} style={{ cursor: 'pointer', borderBottom: '1px dotted #888' }}>
-                        {a.cardNumber}
+                      <span title={fullId} style={{ cursor: 'pointer', borderBottom: '1px dotted #888' }}>
+                        {displayId}
                       </span>
                     </td>
                     <td>
@@ -189,11 +235,57 @@ export function MyDorm() {
                     <td><span className="role-badge role-teacher">{a.roomNumber}</span></td>
                     <td style={{ position: 'relative' }}>
                       <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" role="button" aria-label="Actions" style={{ cursor: 'pointer', color: '#6b7280' }}><title>Actions</title><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
+                        <svg 
+                          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" 
+                          role="button" aria-label="Actions" style={{ cursor: 'pointer', color: '#6b7280' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === a._id ? null : (a._id || null));
+                          }}
+                        >
+                          <title>Actions</title>
+                          <path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                        
+                        {activeMenuId === a._id && (
+                          <div className="actions-dropdown" style={{
+                            position: 'absolute',
+                            right: '30px',
+                            top: '20px',
+                            background: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                            zIndex: 10,
+                            minWidth: '120px',
+                            overflow: 'hidden'
+                          }}>
+                            <div 
+                              className="action-item" 
+                              style={{ padding: '8px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                              onClick={() => handleEdit(a)}
+                              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                              Update
+                            </div>
+                            <div 
+                              className="action-item" 
+                              style={{ padding: '8px 16px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}
+                              onClick={() => { setActiveMenuId(null); handleDelete(a._id); }}
+                              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              Delete
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               )}
             </tbody>
           </table>
@@ -219,7 +311,7 @@ export function MyDorm() {
         <div className="drawer-overlay" onClick={handleCloseModal}>
           <div className="drawer-content" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
-              <h2>Assign Dorm</h2>
+              <h2>{editId ? 'Update Dorm Assignment' : 'Assign Dorm'}</h2>
               <button className="drawer-close" onClick={handleCloseModal}>×</button>
             </div>
             
@@ -244,8 +336,20 @@ export function MyDorm() {
                       placeholder="Search or select card number..."
                       value={isDropdownOpen ? searchQuery : (formData.cardNumber || '')} 
                       onChange={e => {
-                        setSearchQuery(e.target.value);
-                        setFormData({ ...formData, cardNumber: e.target.value });
+                        const val = e.target.value;
+                        setSearchQuery(val);
+                        
+                        const matchedStudent = students.find(s => String(s.cardNumber) === val);
+                        setFormData({ 
+                          ...formData, 
+                          cardNumber: val,
+                          ...(matchedStudent ? { 
+                            fullName: matchedStudent.name, 
+                            email: matchedStudent.email,
+                            grade: matchedStudent.grade || '7'
+                          } : {})
+                        });
+                        
                         setIsDropdownOpen(true);
                       }}
                       onFocus={() => {
@@ -316,6 +420,7 @@ export function MyDorm() {
                                   cardNumber: student.cardNumber,
                                   fullName: student.name,
                                   email: student.email,
+                                  grade: student.grade || '7',
                                 });
                                 setIsDropdownOpen(false);
                                 setSearchQuery('');
@@ -335,12 +440,12 @@ export function MyDorm() {
                 
                 <div className="form-group">
                   <label>Full Name</label>
-                  <input type="text" placeholder="Enter full name..." value={formData.fullName || ''} onChange={e => setFormData({...formData, fullName: e.target.value})} required />
+                  <input type="text" placeholder="Enter full name..." value={formData.fullName || ''} onChange={e => setFormData({...formData, fullName: e.target.value})} required readOnly />
                 </div>
 
                 <div className="form-group">
                   <label>Email Address</label>
-                  <input type="email" placeholder="Enter email address..." value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} required />
+                  <input type="email" placeholder="Enter email address..." value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} required readOnly />
                 </div>
 
                 <div className="form-row" style={{ display: 'flex', gap: '16px' }}>
@@ -358,11 +463,17 @@ export function MyDorm() {
                   <div className="form-group" style={{ flex: 1 }}>
                     <label>Select Dorm</label>
                     <select value={formData.dorm || ''} onChange={e => setFormData({...formData, dorm: e.target.value})} required>
-                      <option value="" disabled>Select...</option>
-                      <option value="North Hall">North Hall</option>
-                      <option value="South Hall">South Hall</option>
-                      <option value="East Wing">East Wing</option>
-                      <option value="West Wing">West Wing</option>
+                      <option value="" disabled>Select Dorm</option>
+                      <optgroup label="Boys Dorm">
+                        <option value="Boys Dorm A">Boys Dorm A</option>
+                        <option value="Boys Dorm B">Boys Dorm B</option>
+                        <option value="Boys Dorm C">Boys Dorm C</option>
+                      </optgroup>
+                      <optgroup label="Girls Dorm">
+                        <option value="Girls Dorm A">Girls Dorm A</option>
+                        <option value="Girls Dorm B">Girls Dorm B</option>
+                        <option value="Girls Dorm C">Girls Dorm C</option>
+                      </optgroup>
                     </select>
                   </div>
                 </div>
@@ -377,7 +488,7 @@ export function MyDorm() {
             <div className="drawer-footer">
               <button type="submit" form="mentee-form" className="btn btn-primary full-width">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                Save Assignment
+                {editId ? 'Update Assignment' : 'Save Assignment'}
               </button>
             </div>
           </div>

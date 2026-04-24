@@ -23,7 +23,7 @@ export function AllIssues() {
 
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const isTeacher = user?.role === 'teacher';
+  const hideActions = user?.role === 'teacher' || user?.role === 'dorm parent';
 
   const fetchReports = async () => {
     setIsLoading(true);
@@ -126,7 +126,7 @@ export function AllIssues() {
                 <th>URGENCY</th>
                 <th>STATUS</th>
                 <th>DATE</th>
-                {!isTeacher && <th style={{ textAlign: 'right' }}>ACTIONS</th>}
+                {!hideActions && <th style={{ textAlign: 'right' }}>ACTIONS</th>}
               </tr>
             </thead>
             <tbody>
@@ -141,7 +141,7 @@ export function AllIssues() {
                     <td><div className="skeleton-chip"></div></td>
                     <td><div className="skeleton-chip"></div></td>
                     <td><div className="skeleton-line short"></div></td>
-                    {!isTeacher && (
+                    {!hideActions && (
                       <td>
                         <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
                           <div className="skeleton-icon"></div>
@@ -152,7 +152,7 @@ export function AllIssues() {
                 ))
               ) : reports.length === 0 ? (
                 <tr>
-                  <td colSpan={isTeacher ? 8 : 9} style={{ textAlign: 'center', padding: '24px' }}>No issues found.</td>
+                  <td colSpan={hideActions ? 8 : 9} style={{ textAlign: 'center', padding: '24px' }}>No issues found.</td>
                 </tr>
               ) : (
                 reports.map((r) => (
@@ -178,7 +178,7 @@ export function AllIssues() {
                       <span className={getStatusClass(r.status)}>{r.status}</span>
                     </td>
                     <td><span className="date-text">{r.date}</span></td>
-                    {!isTeacher && (
+                    {!hideActions && (
                       <td style={{ position: 'relative' }}>
                         <div className="row-actions" style={{ justifyContent: 'flex-end' }}>
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" onClick={(e) => { if (r.id) toggleDropdown(r.id, e); }}><path d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>
