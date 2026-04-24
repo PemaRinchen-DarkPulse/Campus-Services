@@ -324,17 +324,19 @@ export function CafeMenu() {
                     )}
                   </label>
                 </div>
-                <div className="form-group">
-                  <label className="toggle-switch" style={{ marginTop: '8px' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.available ?? true} 
-                      onChange={e => setFormData({...formData, available: e.target.checked})}
-                    />
-                    <span className="slider"></span>
-                    <span className="toggle-label">{formData.available !== false ? 'Available' : 'Unavailable'}</span>
-                  </label>
-                </div>
+                {editingItem && (
+                  <div className="form-group">
+                    <label className="toggle-switch" style={{ marginTop: '8px' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.available ?? true} 
+                        onChange={e => setFormData({...formData, available: e.target.checked})}
+                      />
+                      <span className="slider"></span>
+                      <span className="toggle-label">{formData.available !== false ? 'Available' : 'Unavailable'}</span>
+                    </label>
+                  </div>
+                )}
               </form>
             </div>
             <div className="drawer-footer">

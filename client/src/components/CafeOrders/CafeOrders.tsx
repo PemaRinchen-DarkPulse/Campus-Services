@@ -25,10 +25,12 @@ interface CafeOrdersProps {
     name: string;
     cardId: string;
     role: string;
+    credits?: string | number;
   };
+  onOrderPlaced?: (total: number) => void;
 }
 
-export function CafeOrders({ studentUser }: CafeOrdersProps) {
+export function CafeOrders({ studentUser, onOrderPlaced }: CafeOrdersProps) {
   // If studentUser is provided, we are in POS / Customer Ordering mode
   const isCustomerMode = !!studentUser;
 
@@ -42,6 +44,10 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(isCustomerMode);
   const [submittingOrder, setSubmittingOrder] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [pinError, setPinError] = useState('');
+  const [successOrderTotal, setSuccessOrderTotal] = useState<number | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -132,11 +138,46 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
 
   const submitOrder = async () => {
     if (cart.length === 0 || !studentUser) return;
-    setSubmittingOrder(true);
+    setPinError('');
+    setIsPinModalOpen(true);
+  };
+
+  const handleConfirmPin = async () => {
+    if (!pinValue || pinValue.length !== 4) {
+      setPinError('Please enter a valid 4-digit PIN.');
+      return;
+    }
     
+    setPinError('');
+    setSubmittingOrder(true);
+
+    if (!studentUser?.hasPin) {
+      // Call create pin endpoint before placing order
+      try {
+        const pinRes = await fetch(`${API_BASE_URL}/api/auth/set-pin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ pin: pinValue })
+        });
+        const pinResult = await pinRes.json();
+        if (!pinResult.success) {
+          setPinError(pinResult.message || 'Failed to create PIN.');
+          setSubmittingOrder(false);
+          return;
+        }
+      } catch (err) {
+        setPinError('Error creating PIN.');
+        setSubmittingOrder(false);
+        return;
+      }
+    }
+
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const orderPayload = {
-      customerName: studentUser.name,
+      customerName: studentUser?.name,
       items: cart.map(item => ({
         menuItem: item.id,
         name: item.name,
@@ -145,7 +186,8 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
       })),
       total,
       status: 'Pending',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      pin: pinValue // Send PIN to verify
     };
 
     try {
@@ -160,14 +202,19 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
       
       const result = await res.json();
       if (res.ok && result.success) {
-        alert(`Order placed successfully! Total: Nu. ${total.toFixed(2)}`);
+        setIsPinModalOpen(false);
+        setPinValue('');
+        setSuccessOrderTotal(total);
         setCart([]);
+        if (onOrderPlaced) {
+          onOrderPlaced(total);
+        }
       } else {
-        alert('Failed to place order: ' + (result.message || 'Please try again.'));
+        setPinError(result.message || 'Failed to place order.');
       }
     } catch (error) {
       console.error('Error placing order:', error);
-      alert('An error occurred while placing the order. Please try again.');
+      setPinError('An error occurred while placing the order. Please try again.');
     } finally {
       setSubmittingOrder(false);
     }
@@ -231,7 +278,7 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
                   className="pos-menu-card" 
                   style={{ 
                     background: 'white', 
-                    border: '1px solid #e5e7eb',
+                    border: '1px solid #d1d5db',
                     borderRadius: '12px', 
                     overflow: 'hidden', 
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
@@ -242,13 +289,15 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
                   onMouseOver={e => {
                     e.currentTarget.style.transform = 'translateY(-4px)';
                     e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.borderColor = '#9ca3af';
                   }}
                   onMouseOut={e => {
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.borderColor = '#d1d5db';
                   }}
                 >
-                  <div style={{ height: '140px', background: '#f3f4f6', width: '100%', position: 'relative' }}>
+                  <div style={{ height: '140px', background: '#f3f4f6', width: '100%', position: 'relative', borderBottom: '1px solid #d1d5db' }}>
                     {item.image ? (
                       <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
@@ -355,13 +404,18 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
               <span>Total</span>
               <span>Nu. {cartTotal.toFixed(2)}</span>
             </div>
+            {studentUser && Number(studentUser.credits || 0) < cartTotal && (
+              <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '12px', textAlign: 'center', fontWeight: '600' }}>
+                Insufficient credits (Available: Nu. {Number(studentUser.credits || 0).toFixed(2)})
+              </div>
+            )}
             <button 
               onClick={submitOrder}
-              disabled={cart.length === 0 || submittingOrder}
+              disabled={cart.length === 0 || submittingOrder || (!!studentUser && Number(studentUser.credits || 0) < cartTotal)}
               style={{
-                width: '100%', padding: '14px', background: cart.length === 0 ? '#9ca3af' : '#2563eb', 
+                width: '100%', padding: '14px', background: (cart.length === 0 || (!!studentUser && Number(studentUser.credits || 0) < cartTotal)) ? '#9ca3af' : '#2563eb', 
                 color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px',
-                cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
+                cursor: (cart.length === 0 || (!!studentUser && Number(studentUser.credits || 0) < cartTotal)) ? 'not-allowed' : 'pointer',
                 opacity: submittingOrder ? 0.7 : 1
               }}
             >
@@ -369,6 +423,109 @@ export function CafeOrders({ studentUser }: CafeOrdersProps) {
             </button>
           </div>
         </div>
+
+        {/* PIN Modal */}
+        {isPinModalOpen && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{
+              background: 'white', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '400px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#111827' }}>
+                {studentUser.hasPin ? 'Enter Transaction PIN' : 'Create 4-Digit PIN'}
+              </h3>
+              {!studentUser.hasPin && (
+                <p style={{ color: '#4b5563', fontSize: '14px', textAlign: 'center', marginBottom: '24px' }}>
+                  You haven't set a transaction PIN yet. Please create a 4-digit PIN to secure your orders.
+                </p>
+              )}
+              {studentUser.hasPin && (
+                <p style={{ color: '#4b5563', fontSize: '14px', textAlign: 'center', marginBottom: '24px' }}>
+                  To confirm your order of <strong style={{ color: '#059669' }}>Nu. {cartTotal.toFixed(2)}</strong>, please enter your PIN.
+                </p>
+              )}
+              <input
+                type="password"
+                maxLength={4}
+                value={pinValue}
+                onChange={e => setPinValue(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="****"
+                style={{
+                  fontSize: '24px', letterSpacing: '8px', textAlign: 'center', padding: '12px',
+                  width: '120px', border: '2px solid #d1d5db', borderRadius: '8px', 
+                  marginBottom: '16px', outline: 'none'
+                }}
+                onFocus={e => e.currentTarget.style.borderColor = '#4f46e5'}
+                onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
+              />
+              {pinError && <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px' }}>{pinError}</div>}
+              
+              <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                <button
+                  onClick={() => { setIsPinModalOpen(false); setPinValue(''); setPinError(''); }}
+                  style={{
+                    flex: 1, padding: '12px', background: '#f3f4f6', color: '#4b5563',
+                    border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmPin}
+                  disabled={pinValue.length !== 4 || submittingOrder}
+                  style={{
+                    flex: 1, padding: '12px', background: pinValue.length !== 4 ? '#9ca3af' : '#4f46e5',
+                    color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600',
+                    cursor: pinValue.length !== 4 ? 'not-allowed' : 'pointer',
+                    opacity: submittingOrder ? 0.7 : 1
+                  }}
+                >
+                  {submittingOrder ? 'Processing...' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {successOrderTotal !== null && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+          }}>
+            <div style={{
+              background: 'white', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '400px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center'
+            }}>
+              <div style={{ width: '64px', height: '64px', background: '#d1fae5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', marginBottom: '16px' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              </div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', color: '#111827' }}>
+                Order Placed Successfully!
+              </h3>
+              <p style={{ color: '#4b5563', fontSize: '15px', textAlign: 'center', margin: '0 0 24px 0' }}>
+                Your order for <strong style={{ color: '#059669' }}>Nu. {successOrderTotal.toFixed(2)}</strong> has been confirmed and is now pending.
+              </p>
+              
+              <button
+                onClick={() => setSuccessOrderTotal(null)}
+                style={{
+                  width: '100%', padding: '12px', background: '#4f46e5', color: 'white',
+                  border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer'
+                }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

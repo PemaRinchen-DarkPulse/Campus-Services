@@ -47,6 +47,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    pin: {
+      type: String,
+      select: false, // don't return PIN by default
+    },
     mentor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

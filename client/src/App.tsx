@@ -3,10 +3,12 @@ import { RoleSelection } from './components/RoleSelection/RoleSelection'
 import { UsersManagement } from './components/UsersManagement/UsersManagement'
 import { CafeMenu } from './components/CafeMenu/CafeMenu'
 import { CafeOrders } from './components/CafeOrders/CafeOrders'
+import { CafeBilling } from './components/CafeBilling/CafeBilling';
 import StudentSettings from './components/StudentSettings/StudentSettings'
 import { MyReport } from './components/MyReport/MyReport'
 import { AllIssues } from './components/AllIssues/AllIssues'
 import { MyMentees } from './components/MyMentees/MyMentees'
+import { MyDorm } from './components/MyDorm/MyDorm'
 import './App.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -19,6 +21,7 @@ interface User {
   role: string
   specialization?: string
   credits?: string | number
+  hasPin?: boolean
 }
 
 function App() {
@@ -130,7 +133,20 @@ function App() {
             </div>
             
             <div style={{ flex: 1, padding: '32px', overflow: 'hidden' }}>
-              <CafeOrders studentUser={user} />
+              <CafeOrders 
+                studentUser={user} 
+                onOrderPlaced={(total) => {
+                  setUser((prev) => {
+                    if (!prev) return prev;
+                    const prevCredits = parseFloat(String(prev.credits || '0'));
+                    const newCredits = (prevCredits - total).toString();
+                    const updatedUser = { ...prev, credits: newCredits, hasPin: true };
+                    // Update user in local storage to keep it in sync on reload
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    return updatedUser;
+                  });
+                }}
+              />
             </div>
           </div>
         )
@@ -274,7 +290,7 @@ const DUMMY_STUDENTS = [
 
 function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<string>(
-    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : user.role === 'teacher' ? 'Overview' : user.role === 'student' ? 'Settings' : 'Students'
+    user.role === 'admin' ? 'Users' : user.role === 'cafe manager' ? 'Overview' : (user.role === 'teacher' || user.role === 'dorm parent') ? 'Overview' : user.role === 'student' ? 'Settings' : 'Students'
   );
   const [dropdownOpenId, setDropdownOpenId] = useState<string | null>(null);
 
@@ -284,19 +300,16 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
   };
 
   return (
-    <div className="dashboard-layout" onClick={() => setDropdownOpenId(null)}>
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="logo-container">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect width="24" height="24" rx="6" fill="#1f2937" />
-            <circle cx="12" cy="12" r="5" fill="#facc15" />
-          </svg>
-          <span>Campus Services</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', cursor: 'pointer' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+    <div className="dashboard-layout" onClick={() => setDropdownOpenId(null)} style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8fafc' }}>
+      
+      {/* Sidebar Area */}
+      <div className="sidebar" style={{ width: '250px', background: 'white', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', zIndex: 10 }}>
+        <div className="logo-container" style={{ height: '72px', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '8px', borderBottom: '1px solid #e5e7eb', cursor: 'pointer' }}>
+          <div className="logo-icon" style={{ background: '#2563eb', color: 'white', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', fontWeight: 'bold', fontSize: '15px' }}>GR</div>
+          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#111827' }}>Greenfield Academy</span>
         </div>
+
+        <div className="sidebar-scroll" style={{ flex: 1, overflowY: 'auto', paddingTop: '24px' }}>
 
         {user.role === 'admin' ? (
           <>
@@ -336,14 +349,18 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
               <SidebarItem icon="settings" label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
             </div>
           </>
-        ) : user.role === 'teacher' ? (
+        ) : user.role === 'teacher' || user.role === 'dorm parent' ? (
           <>
             <div className="sidebar-section">
               <div className="sidebar-title">MAIN MENU</div>
               <SidebarItem icon="home" label="Overview" active={activeTab === 'Overview'} onClick={() => setActiveTab('Overview')} />
               <SidebarItem icon="bar-chart" label="My Report" active={activeTab === 'My Report'} onClick={() => setActiveTab('My Report')} />
               <SidebarItem icon="clipboard" label="All Issues" active={activeTab === 'All Issues'} onClick={() => setActiveTab('All Issues')} />
-              <SidebarItem icon="users" label="My Mentees" active={activeTab === 'My Mentees'} onClick={() => setActiveTab('My Mentees')} />
+              {user.role === 'dorm parent' ? (
+                <SidebarItem icon="users" label="Dorm" active={activeTab === 'Dorm'} onClick={() => setActiveTab('Dorm')} />
+              ) : (
+                <SidebarItem icon="users" label="My Mentees" active={activeTab === 'My Mentees'} onClick={() => setActiveTab('My Mentees')} />
+              )}
             </div>
 
             <div className="sidebar-section">
@@ -386,70 +403,61 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
             </div>
           </>
         )}
+        </div>
 
-        <div className="feedback-btn" onClick={onLogout}>
+        <div className="feedback-btn" onClick={onLogout} style={{ marginTop: 'auto', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', color: '#6b7280', cursor: 'pointer' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           Log Out
         </div>
       </div>
 
       {/* Main Column */}
-      <div className="main-content">
-        {/* Top Header */}
-        <div className="top-header">
-          <div className="search-bar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input type="text" placeholder="Search for students, classes, groups etc." />
-          </div>
-
-          <div className="header-actions">
-            <button 
-              className={`icon-btn ${activeTab === 'Settings' ? 'active' : ''}`}
-              onClick={() => (user.role === 'student' || user.role === 'teacher') && setActiveTab('Settings')}
-              title={(user.role === 'student' || user.role === 'teacher') ? 'Settings' : undefined}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </button>
-            <button className="icon-btn has-notification">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            </button>
-            <div 
-              className="user-profile" 
-              onClick={() => (user.role === 'student' || user.role === 'teacher') && setActiveTab('Settings')}
-              style={{ cursor: (user.role === 'student' || user.role === 'teacher') ? 'pointer' : 'default' }}
-            >
-              <div className="user-info">
-                <span className="user-name">{user.name}</span>
-                <span className="user-role" style={{ textTransform: 'capitalize' }}>
-                  {user.role === 'cafe manager' ? 'Cafe Manager' : user.role}
-                </span>
+      <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#FAFAFA' }}>
+        
+        {/* Top Navbar */}
+        <div className="top-header" style={{ height: '72px', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" style={{cursor: 'pointer'}}><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <div className="user-profile" onClick={onLogout} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+              <div className="user-avatar" style={{ width: '32px', height: '32px', background: '#f3f4f6', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#4b5563', fontSize: '14px' }}>
+                {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
               </div>
-              <div className="teacher-avatar" style={{background: '#1f2937'}}></div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M19 9l-7 7-7-7" /></svg>
             </div>
           </div>
         </div>
 
         {/* Dynamic Page Content */}
-        <div className="page-content">
+        <div className="page-content" style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#111827' }}>{activeTab}</h1>
+            <div className="search-bar" style={{ width: '300px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', border: '1px solid #e5e7eb', padding: '8px 12px', borderRadius: '8px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input type="text" placeholder="Search..." style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: '#1f2937' }} />
+            </div>
+          </div>
+
           {activeTab === 'Users' ? (
             <UsersManagement />
           ) : activeTab === 'Menu' ? (
             <CafeMenu />
           ) : activeTab === 'Orders' ? (
             <CafeOrders />
+          ) : activeTab === 'Billing' && user.role === 'cafe manager' ? (
+            <CafeBilling />
           ) : activeTab === 'Settings' && user.role === 'student' ? (
             <StudentSettings user={user} credits={parseFloat(String(user.credits || 0))} />
-          ) : user.role === 'teacher' && activeTab === 'Settings' ? (
-            <div style={{ padding: '24px' }}><h2>Teacher Settings</h2><p>Settings coming soon...</p></div>
-          ) : user.role === 'teacher' && activeTab === 'Overview' ? (
+          ) : (user.role === 'teacher' || user.role === 'dorm parent') && activeTab === 'Settings' ? (
+            <div style={{ padding: '24px' }}><h2>{user.role === 'dorm parent' ? 'Dorm Parent' : 'Teacher'} Settings</h2><p>Settings coming soon...</p></div>
+          ) : (user.role === 'teacher' || user.role === 'dorm parent') && activeTab === 'Overview' ? (
             <div style={{ padding: '24px' }}><h2>Overview</h2><p>Welcome to your overview page.</p></div>
-          ) : user.role === 'teacher' && activeTab === 'My Report' ? (
+          ) : (user.role === 'teacher' || user.role === 'dorm parent') && activeTab === 'My Report' ? (
             <MyReport />
-          ) : user.role === 'teacher' && activeTab === 'All Issues' ? (
+          ) : (user.role === 'teacher' || user.role === 'dorm parent') && activeTab === 'All Issues' ? (
             <AllIssues />
           ) : user.role === 'teacher' && activeTab === 'My Mentees' ? (
             <MyMentees />
+          ) : user.role === 'dorm parent' && activeTab === 'Dorm' ? (
+            <MyDorm />
           ) : (
             <>
               <div className="page-header">
@@ -583,7 +591,7 @@ function DashboardLayout({ user, onLogout }: { user: User; onLogout: () => void 
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function SidebarItem({ icon, label, active, badge, chevron, onClick }: { icon: string, label: string, active?: boolean, badge?: string, chevron?: boolean, onClick?: () => void }) {
@@ -601,6 +609,7 @@ function SidebarItem({ icon, label, active, badge, chevron, onClick }: { icon: s
       case 'shopping-bag': return <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />;
       case 'bar-chart': return <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />;
       case 'settings': return <><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></>;
+      case 'file-text': return <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />;
       default: return null;
     }
   };

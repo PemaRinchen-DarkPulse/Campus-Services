@@ -2,13 +2,38 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // @route   POST /api/orders
 // @desc    Create a new order
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
-    const { customerName, items, total, status, time } = req.body;
+    const { customerName, items, total, status, time, pin } = req.body;
+
+    const user = await User.findById(req.user._id).select('+pin');
+    
+    if (user.role === 'student' || user.role === 'user') {
+      if (!pin) {
+        return res.status(400).json({ success: false, message: 'Please provide your 4-digit PIN.' });
+      }
+      
+      const isMatch = await bcrypt.compare(pin, user.pin);
+      if (!isMatch) {
+         return res.status(400).json({ success: false, message: 'Invalid PIN.' });
+      }
+      
+      const userCredits = parseFloat(user.credits || '0');
+      const orderTotal = parseFloat(total || '0');
+      
+      if (userCredits < orderTotal) {
+        return res.status(400).json({ success: false, message: 'Insufficient credits to place this order.' });
+      }
+      
+      user.credits = (userCredits - orderTotal).toString();
+      await user.save();
+    }
 
     const newOrder = await Order.create({
       customer: req.user._id,

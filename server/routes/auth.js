@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
@@ -25,6 +26,7 @@ const sendAuthResponse = (res, statusCode, user) => {
       role: user.role,
       specialization: user.specialization,
       credits: user.credits,
+      hasPin: !!user.pin,
     },
   });
 };
@@ -70,7 +72,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email }).select('+password +cardNumber');
+    const user = await User.findOne({ email }).select('+password +cardNumber +pin');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -128,6 +130,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/me', protect, async (req, res) => {
+  const userWithPin = await User.findById(req.user._id).select('+pin');
   res.status(200).json({
     success: true,
     user: {
@@ -138,14 +141,37 @@ router.get('/me', protect, async (req, res) => {
       role: req.user.role,
       specialization: req.user.specialization,
       credits: req.user.credits,
+      hasPin: !!userWithPin.pin,
     },
   });
 });
 
-// Admin and Teacher routes for User Management
+// @route   POST /api/auth/set-pin
+// @desc    Set transaction PIN (4 digits)
+// @access  Private
+router.post('/set-pin', protect, async (req, res) => {
+  try {
+    const { pin } = req.body;
+    if (!pin || !/^\d{4}$/.test(pin)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid 4-digit PIN' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPin = await bcrypt.hash(pin, salt);
+
+    await User.findByIdAndUpdate(req.user._id, { pin: hashedPin });
+
+    res.status(200).json({ success: true, message: 'PIN set successfully' });
+  } catch (err) {
+    console.error('Error setting PIN:', err);
+    res.status(500).json({ success: false, message: 'Error setting PIN' });
+  }
+});
+
+// Admin, Teacher, and Dorm Parent routes for User Management
 router.get('/users', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'teacher') {
+    if (req.user.role !== 'admin' && req.user.role !== 'teacher' && req.user.role !== 'dorm parent') {
       return res.status(403).json({ success: false, message: 'Not authorized to access this route' });
     }
     const users = await User.find().select('-password');
